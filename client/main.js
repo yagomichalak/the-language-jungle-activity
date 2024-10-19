@@ -8,16 +8,38 @@ let auth;
 
 const discordSdk = new DiscordSDK(import.meta.env.VITE_DISCORD_CLIENT_ID);
 
+let currentRound = 0;
+let maxRounds = 10;
+let maxAttempts = 3;
+let remainingAttempts = maxAttempts;
+let audioFiles = [];
+let currentAudio = null;
+let audioElement = null;
+let isGameOver = false;
+
+// Render the initial UI (with logo and title)
+function renderInitialUI() {
+  document.querySelector('#app').innerHTML = `
+    <div>
+      <img src="${rocketLogo}" class="logo" alt="The Language Jungle" />
+      <h1>The Language Jungle</h1>
+      <p>Get ready to test your language skills in this game!</p>
+    </div>
+  `;
+}
+
+// Discord SDK initialization
 setupDiscordSdk().then(() => {
   console.log("Discord SDK is authenticated");
-  appendVoiceChannelName();
-  appendGuildAvatar();
-  // Now that the SDK is ready, play background music
-  playBackgroundMusic();
+  // appendVoiceChannelName();
+  // appendGuildAvatar();
+  // // Now that the SDK is ready, play background music
+  // playBackgroundMusic();
+  renderInitialUI();  // Show the initial UI with the logo and title
   // updatePresence();
-  // We can now make API calls within the scopes we requested in setupDiscordSDK()
-  // Note: the access_token returned is a sensitive secret and should be treated as such
+  startGame();        // Ensure the game starts here
 });
+
 
 async function appendVoiceChannelName() {
   const app = document.querySelector('#app');
@@ -75,6 +97,7 @@ async function setupDiscordSdk() {
   await discordSdk.ready();
   console.log("Discord SDK is ready");
 
+  console.log("yesss")
   // Authorize with Discord Client
   const { code } = await discordSdk.commands.authorize({
     client_id: import.meta.env.VITE_DISCORD_CLIENT_ID,
@@ -88,11 +111,11 @@ async function setupDiscordSdk() {
     ],
   });
 
+  console.log("gimme code: ")
+  return
+
   // Retrieve an access_token from your activity's server
-  // Note: We need to prefix our backend `/api/token` route with `/.proxy` to stay compliant with the CSP.
-  // Read more about constructing a full URL and using external resources at
-  // https://discord.com/developers/docs/activities/development-guides#construct-a-full-url
-  const response = await fetch("/.proxy/api/token", {
+  const response = await fetch("/api/token", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -102,6 +125,7 @@ async function setupDiscordSdk() {
     }),
   });
   const { access_token } = await response.json();
+  console.log("access tokenenenene: ", access_token);
 
   // Authenticate with Discord client (using the access_token)
   auth = await discordSdk.commands.authenticate({
@@ -126,37 +150,136 @@ function playBackgroundMusic() {
   }, { once: true }); // Ensure it runs only once
 }
 
+async function fetchAudioFiles() {
+  audioFiles = [
+    "bluetooth.mp3", "Cala_bouuuca.mp3", "Disgusting_3.mp3",
+    "flamengo.mp3", "money.mp3", "whip.mp3"
+  ]
+  // const response = await fetch("/api/audios");
+  // audioFiles = await response.json();
+  // if (audioFiles.length === 0) {
+  //   throw new Error("No audio files available");
+  // }
+}
+
+async function startGame() {
+  await fetchAudioFiles();
+  currentRound = 0;
+  remainingAttempts = maxAttempts;
+  isGameOver = false;
+  document.querySelector('#app').innerHTML += `<h2>Game starting!</h2>`;
+  // startAudioPlayback();
+  nextRound();
+}
+
+function nextRound() {
+  if (currentRound >= maxRounds || isGameOver) {
+    endGame(true);
+    return;
+  }
+
+  currentRound++;
+
+  document.querySelector('#app').innerHTML = `
+    <h2>Round ${currentRound}</h2>
+    <p>Get ready! The audio will play after the countdown.</p>
+    <p>Attempts left: ${remainingAttempts}</p>
+    <p id="timer"></p> <!-- Ensure the timer element is present in the UI -->
+  `;
+  
+  showCountdown(10, startAudioPlayback);
+}
+
+function startAudioPlayback() {
+  const randomIndex = Math.floor(Math.random() * audioFiles.length);
+  currentAudio = audioFiles[randomIndex];
+
+  document.querySelector('#app').innerHTML = `
+    <h2>Round ${currentRound}</h2>
+    <p>Guess the language after the audio finishes!</p>
+    <p>Attempts left: ${remainingAttempts}</p>
+    <p id="timer"></p>
+    <input id="languageInput" type="text" disabled />
+  `;
+
+  audioElement = new Audio(`./assets/audios/${currentAudio}`);
+  audioElement.loop = false
+  audioElement.play();
+  audioElement.onended = () => {
+    document.querySelector("#languageInput").disabled = false;
+    document.querySelector("#languageInput").focus();
+  };
+
+  // Add listener to handle input validation after the audio finishes
+  document.querySelector('#languageInput').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      checkAnswer(event.target.value);
+    }
+  });
+}
+
+function checkAnswer(userInput) {
+  const correctAnswer = currentAudio.split(".")[0]; // The file name without extension
+  if (userInput.trim().toLowerCase() === correctAnswer.toLowerCase()) {
+    nextRound();
+  } else {
+    remainingAttempts--;
+    document.querySelector('#app').innerHTML += `
+      <p>Wrong guess! The correct answer was: <strong>${correctAnswer}</strong></p>
+    `;
+    if (remainingAttempts <= 0) {
+      endGame(false);
+    } else {
+      document.querySelector("#languageInput").value = "";
+      document.querySelector('#app').querySelector("p:nth-of-type(2)").textContent = `Attempts left: ${remainingAttempts}`;
+    }
+  }
+}
+
+function endGame(won) {
+  isGameOver = true;
+  document.querySelector('#app').innerHTML = `
+    <h2>${won ? "You Won!" : "Game Over!"}</h2>
+    <button id="restartGame">Restart</button>
+  `;
+
+  document.querySelector('#restartGame').addEventListener('click', startGame);
+}
+
+function showCountdown(seconds, callback) {
+  const timer = document.querySelector('#app').querySelector("#timer");
+  let counter = seconds;
+
+  const interval = setInterval(() => {
+    timer.textContent = `Next round in: ${counter} seconds`;
+    counter--;
+
+    if (counter < 0) {
+      clearInterval(interval);
+      callback();
+    }
+  }, 1000);
+}
+
 async function updatePresence() {
-  // Setting the activity/presence
   await discordSdk.commands.setActivity({
     state: "Playing Solo", // What you're currently doing
-    details: "Competitive", // Description/details of the activity
+    details: `Round ${currentRound}`, // Show current round
     timestamps: {
-      start: new Date(1507665886000), // Starting time (Unix timestamp in milliseconds)
-      end: new Date(1507665886000) // Starting time (Unix timestamp in milliseconds)
+      start: new Date().getTime(), // Activity start time
     },
     assets: {
-      large_image: "slothbot_games", // Key for the large image
-      large_text: "The Language Sloth", // Tooltip text for the large image
-      small_image: "slothbot_games", // Key for the small image
-      small_text: "The Language Sloth", // Tooltip text for the small image
+      large_image: "slothbot_games", // Image key
+      large_text: "Playing Language Game", // Tooltip text
     },
     party: {
-      id: "ae488379-351d-4a4f-ad32-2b9b01c91657", // Party ID (for multi-user activities)
-      size: 1, // Current size of the party
-      max: 5 // Max size of the party
-    },
-    secrets: {
-      join: "MTI4NzM0OjFpMmhuZToxMjMxMjM=", // Secret for joining the activity
+      id: "language-game-party", // Party ID for tracking the game session
+      size: currentRound, // Current round/party size
+      max: maxRounds // Max rounds/party size
     }
   });
 
   console.log("Discord presence updated");
 }
-
-document.querySelector('#app').innerHTML = `
-  <div>
-    <img src="${rocketLogo}" class="logo" alt="The Language Jungle" />
-    <h1>The Language Jungle</h1>
-  </div>
-`;
+// renderInitialUI();
+// startGame();
