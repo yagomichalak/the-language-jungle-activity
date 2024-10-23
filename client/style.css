@@ -32,7 +32,7 @@ body {
   min-height: 100vh;
 
   /* Add the background image */
-  background-image: url('./assets/images/blank_bg.png'); /* Path to your image */
+  background-image: url('./assets/images/graphic/blank_background.png'); /* Path to your image */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

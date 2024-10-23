@@ -1,6 +1,6 @@
 import { DiscordSDK } from "@discord/embedded-app-sdk";
 
-import rocketLogo from './assets/images/bot_icon.png';
+import botLogo from './assets/images/icons/bot_icon.png';
 import "./style.css";
 
 // Will eventually store the authenticated user's access_token
@@ -9,6 +9,7 @@ let auth;
 const discordSdk = new DiscordSDK(import.meta.env.VITE_DISCORD_CLIENT_ID);
 
 let currentRound = 0;
+let countDownInSecs = 5;
 let maxRounds = 10;
 let maxAttempts = 3;
 let remainingAttempts = maxAttempts;
@@ -17,11 +18,14 @@ let currentAudio = null;
 let audioElement = null;
 let isGameOver = false;
 
+const correctAnswerAudio = new Audio('./assets/audios/SFX/correct_answer.mp3'); // Replace with the correct file path
+const wrongAnswerAudio = new Audio('./assets/audios/SFX/wrong_answer.mp3');
+
 // Render the initial UI (with logo and title)
 function renderInitialUI() {
   document.querySelector('#app').innerHTML = `
     <div>
-      <img src="${rocketLogo}" class="logo" alt="The Language Jungle" />
+      <img src="${botLogo}" class="logo" alt="The Language Jungle" />
       <h1>The Language Jungle</h1>
       <p>Get ready to test your language skills in this game!</p>
     </div>
@@ -150,20 +154,47 @@ function playBackgroundMusic() {
   }, { once: true }); // Ensure it runs only once
 }
 
-async function fetchAudioFiles() {
+async function fetchAudioFiles(times) {
   audioFiles = [
-    "bluetooth.mp3", "Cala_bouuuca.mp3", "Disgusting_3.mp3",
-    "flamengo.mp3", "money.mp3", "whip.mp3"
+    { language: "Czech", path: "Czech/Czech_1.mp3" },
+    { language: "Flemish", path: "Flemish/Flemish_1.mp3" },
+    { language: "French", path: "French/French_1.mp3" },
+    { language: "Swedish", path: "Swedish/Swedish_1.mp3" },
+    { language: "Polish", path: "Polish/Polish_1.mp3" },
+    { language: "Romanian", path: "Romanian/Romanian_1.mp3" },
+    { language: "Spanish", path: "Spanish/Spanish_1.mp3" },
+    { language: "Italian", path: "Italian/Italian_1.mp3" },
+    { language: "Centish", path: "Centish/Centish_1.mp3" },
+    { language: "Silesian", path: "Silesian/Silesian_1.mp3" },
   ]
-  // const response = await fetch("/api/audios");
-  // audioFiles = await response.json();
+  // audioFiles = []; // Clear the array to accumulate new files
+  
+  // for (let i = 0; i < times; i++) {
+  //   try {
+  //     // const response = await fetch("/api/audios");
+  //     // const newAudioFile = await response.json(); // Fetch the response as JSON
+  //     console.log("heyy")
+  //     const newAudioFile = await getRandomLanguageAudio(); // Fetch the response as JSON
+  //     console.log("newAudioFile", newAudioFile)
+
+  //     if (!newAudioFile.audio) {
+  //       throw new Error("No audio file returned from the server");
+  //     }
+
+  //     // Accumulate the fetched audio file(s)
+  //     audioFiles.push(newAudioFile);
+  //   } catch (error) {
+  //     console.error(`Error fetching audio file on attempt ${i + 1}:`, error);
+  //   }
+  // }
+
   // if (audioFiles.length === 0) {
-  //   throw new Error("No audio files available");
+  //   throw new Error("No audio files available after all attempts");
   // }
 }
 
 async function startGame() {
-  await fetchAudioFiles();
+  await fetchAudioFiles(maxRounds);
   currentRound = 0;
   remainingAttempts = maxAttempts;
   isGameOver = false;
@@ -186,24 +217,40 @@ function nextRound() {
     <p>Attempts left: ${remainingAttempts}</p>
     <p id="timer"></p> <!-- Ensure the timer element is present in the UI -->
   `;
-  
-  showCountdown(10, startAudioPlayback);
+
+  showCountdown(countDownInSecs, startAudioPlayback);
 }
 
 function startAudioPlayback() {
   const randomIndex = Math.floor(Math.random() * audioFiles.length);
-  currentAudio = audioFiles[randomIndex];
+  const currentAudioObj = audioFiles[randomIndex];
+  currentAudio = currentAudioObj.path;
 
   document.querySelector('#app').innerHTML = `
     <h2>Round ${currentRound}</h2>
     <p>Guess the language after the audio finishes!</p>
     <p>Attempts left: ${remainingAttempts}</p>
     <p id="timer"></p>
+    <p id="audioDuration">Audio: 0:00 / 0:00</p> <!-- Placeholder for audio duration -->
     <input id="languageInput" type="text" disabled />
   `;
 
-  audioElement = new Audio(`./assets/audios/${currentAudio}`);
+  audioElement = new Audio(`./assets/audios/languages/${currentAudio}`);
   audioElement.loop = false
+
+  // Update the total duration of the audio when metadata is loaded
+  audioElement.addEventListener('loadedmetadata', () => {
+    const totalDuration = formatTime(audioElement.duration);
+    document.querySelector('#audioDuration').textContent = `Audio: 0:00 / ${totalDuration}`;
+  });
+
+  // Update the current time as the audio plays
+  audioElement.addEventListener('timeupdate', () => {
+    const currentTime = formatTime(audioElement.currentTime);
+    const totalDuration = formatTime(audioElement.duration);
+    document.querySelector('#audioDuration').textContent = `Audio: ${currentTime} / ${totalDuration}`;
+  });
+
   audioElement.play();
   audioElement.onended = () => {
     document.querySelector("#languageInput").disabled = false;
@@ -213,25 +260,46 @@ function startAudioPlayback() {
   // Add listener to handle input validation after the audio finishes
   document.querySelector('#languageInput').addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
-      checkAnswer(event.target.value);
+      checkAnswer(event.target.value, currentAudioObj.language);
     }
   });
 }
 
-function checkAnswer(userInput) {
-  const correctAnswer = currentAudio.split(".")[0]; // The file name without extension
+// Utility function to format time in MM:SS format
+function formatTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds < countDownInSecs ? '0' : ''}${remainingSeconds}`;
+}
+
+function checkAnswer(userInput, answer) {
+  const correctAnswer = answer; // The file name without extension
   if (userInput.trim().toLowerCase() === correctAnswer.toLowerCase()) {
-    nextRound();
+    correctAnswerAudio.play();
+
+    // After the audio finishes playing, go to the next round
+    correctAnswerAudio.onended = () => {
+      nextRound(); // Proceed to the next round after audio finishes
+    };
   } else {
     remainingAttempts--;
     document.querySelector('#app').innerHTML += `
       <p>Wrong guess! The correct answer was: <strong>${correctAnswer}</strong></p>
     `;
+    // Play the wrong answer audio
+    wrongAnswerAudio.play();
+
+    // Handle the case where there are no attempts left
     if (remainingAttempts <= 0) {
-      endGame(false);
+      wrongAnswerAudio.onended = () => {
+        endGame(false); // End the game after the wrong answer audio finishes
+      };
     } else {
-      document.querySelector("#languageInput").value = "";
-      document.querySelector('#app').querySelector("p:nth-of-type(2)").textContent = `Attempts left: ${remainingAttempts}`;
+      wrongAnswerAudio.onended = () => {
+        document.querySelector("#languageInput").value = ""; // Reset the input field
+        document.querySelector('#app').querySelector("p:nth-of-type(2)").textContent = `Attempts left: ${remainingAttempts}`; // Update attempts left
+        nextRound(); // Go to the next round after wrong answer audio finishes
+      };
     }
   }
 }
@@ -281,5 +349,3 @@ async function updatePresence() {
 
   console.log("Discord presence updated");
 }
-// renderInitialUI();
-// startGame();

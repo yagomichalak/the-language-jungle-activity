@@ -28,3 +28,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Files
+client/assets/audios/multiplayer/*
+client/assets/audios/SFX/*
+client/assets/audios/languages/*
+client/assets/images/graphic/*
+client/assets/images/icons/*

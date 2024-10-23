@@ -44,19 +44,52 @@ app.post("/api/token", async (req, res) => {
   }
 });
 
-// Route to get the list of audio files from the client/assets/audios folder
+// Route to get a random audio file from a random language folder
 app.get("/api/audios", (req, res) => {
-  const audioFolderPath = path.join(__dirname, '../client/assets/audios');
+  const languagesFolderPath = path.join(__dirname, '../client/assets/audios/languages');
 
-  fs.readdir(audioFolderPath, (err, files) => {
+  // Read the languages folder to get a list of subdirectories (each representing a language)
+  fs.readdir(languagesFolderPath, { withFileTypes: true }, (err, files) => {
     if (err) {
-      console.error("Error reading audio files:", err);
-      return res.status(500).send("Unable to retrieve audio files");
+      console.error("Error reading languages folders:", err);
+      return res.status(500).send("Unable to retrieve languages folders");
     }
 
-    // Filter the files to include only .mp3 (or relevant audio) files
-    const audioFiles = files.filter(file => file.endsWith(".mp3"));
-    res.send(audioFiles);
+    // Filter the directories to ensure we only pick folders
+    const languageFolders = files.filter(file => file.isDirectory()).map(dir => dir.name);
+
+    if (languageFolders.length === 0) {
+      return res.status(404).send("No language folders found");
+    }
+
+    // Select a random language folder
+    const randomLanguageFolder = languageFolders[Math.floor(Math.random() * languageFolders.length)];
+    const selectedLanguagePath = path.join(languagesFolderPath, randomLanguageFolder);
+
+    // Read the selected language folder to get a list of audio files
+    fs.readdir(selectedLanguagePath, (err, audioFiles) => {
+      if (err) {
+        console.error("Error reading audio files in the selected language folder:", err);
+        return res.status(500).send("Unable to retrieve audio files from the selected language folder");
+      }
+
+      // Filter the files to include only .mp3 files
+      const mp3Files = audioFiles.filter(file => file.endsWith(".mp3"));
+
+      if (mp3Files.length === 0) {
+        return res.status(404).send(`No audio files found in the ${randomLanguageFolder} folder`);
+      }
+
+      // Select a random .mp3 file from the folder
+      const randomAudioFile = mp3Files[Math.floor(Math.random() * mp3Files.length)];
+      const audioFilePath = path.join(selectedLanguagePath, randomAudioFile);
+
+      // Respond with the selected random audio file path (relative to the client/assets/audios directory)
+      res.send({
+        language: randomLanguageFolder,
+        audio: audioFilePath,
+      });
+    });
   });
 });
 
