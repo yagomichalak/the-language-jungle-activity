@@ -32,11 +32,14 @@ body {
   min-height: 100vh;
 
   /* Add the background image */
-  background-image: url('./assets/images/graphic/blank_background.png'); /* Path to your image */
+
+  /* Path to your image */
+  background-image: url('./assets/images/graphic/blank_background.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  background-attachment: fixed; /* Ensures it stays fixed when scrolling */
+  /* Ensures it stays fixed when scrolling */
+  background-attachment: fixed;
 }
 
 h1 {
@@ -48,27 +51,44 @@ h1 {
   z-index: 1;
   text-align: center;
   display: flex;
-  justify-content: space-between; /* Ensures there's space between the two divs */
-  align-items: flex-start; /* Aligns both game and scoreboard at the top */
-  width: 100%; /* Full width */
-  max-width: 1280px; /* Optional: maximum width to limit content */
-  margin: 0 auto; /* Center the entire container horizontally */
+  /* Ensures there's space between the two divs */
+  justify-content: space-between;
+  /* Aligns both game and scoreboard at the top */
+  align-items: flex-start;
+  /* Full width */
+  width: 100%;
+  /* Optional: maximum width to limit content */
+  max-width: 1280px;
+  /* Center the entire container horizontally */
+  margin: 0 auto;
+}
+
+.game-container {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 30px;
 }
 
 /* Game section */
 #game {
-  flex: 1; /* The game section takes up remaining space */
-  padding: 20px;
-  background-color: rgba(0, 0, 0, 0.5); /* Optional background for better contrast */
+  /* The game section takes up remaining space */
+  flex: 1;
+  padding: 25px;
+  /* Optional background for better contrast */
+  background-color: rgba(0, 0, 0, 0.5);
   border-radius: 10px;
-  margin-right: 30px; /* Space between game and scoreboard */
 }
 
 /* Scoreboard section */
 #scoreboard {
-  flex: 0 0 300px; /* Fixed width for the scoreboard */
+  /* Fixed width for the scoreboard */
+  flex: 0 0 300px;
   padding: 20px;
-  background-color: rgba(0, 0, 0, 0.5); /* Optional background for better contrast */
+  /* Optional background for better contrast */
+  background-color: rgba(0, 0, 0, 0.5);
   border-radius: 10px;
 }
 
@@ -114,11 +134,11 @@ button:focus-visible {
     color: #213547;
     background-color: #ffffff;
   }
-  
+
   a:hover {
     color: #747bff;
   }
-  
+
   button {
     background-color: #f9f9f9;
   }
@@ -142,7 +162,8 @@ button:focus-visible {
   font-size: 24px;
   opacity: 0;
   transition: opacity 0.5s ease, transform 0.5s ease;
-  z-index: 9999; /* Ensure the popup is on top of other elements */
+  /* Ensure the popup is on top of other elements */
+  z-index: 9999;
 }
 
 /* Trigger animation when the correct answer is given */
@@ -165,37 +186,54 @@ button:focus-visible {
 
 .flags-wrapper {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* Two equal-width columns */
-  justify-content: center; /* Center the grid within its container */
-  align-items: flex-start; /* Vertically align content */
-  column-gap: 30px; /* Space between the PC and Player columns */
+  /* Two equal-width columns */
+  grid-template-columns: 1fr 1fr;
+  /* Center the grid within its container */
+  justify-content: center;
+  /* Vertically align content */
+  align-items: flex-start;
+  /* Space between the PC and Player columns */
+  column-gap: 30px;
 }
 
 /* Ensure each flag column is centered properly */
-.pc-flags, .player-flags {
+.pc-flags,
+.player-flags {
   display: flex;
-  flex-direction: column; /* Stack items vertically */
-  justify-content: flex-start; /* Align items at the top */
-  align-items: center; /* Horizontally center-align content */
-  text-align: center; /* Center-align the text inside the column */
+  /* Stack items vertically */
+  flex-direction: column;
+  /* Align items at the top */
+  justify-content: flex-start;
+  /* Horizontally center-align content */
+  align-items: center;
+  /* Center-align the text inside the column */
+  text-align: center;
 }
 
-.pc-flags img, .player-flags img {
-  width: 80px; /* Adjust flag size */
+.pc-flags img,
+.player-flags img {
+  /* Adjust flag size */
+  width: 80px;
   height: auto;
-  margin: 2px 0; /* Add space above and below each flag */
+  /* Add space above and below each flag */
+  margin: 2px 0;
   border-radius: 5px;
   border: 2px solid #fff;
 }
 
-.pc-flags h4, .player-flags h4 {
+.pc-flags h4,
+.player-flags h4 {
   font-size: 1.2rem;
-  margin: 0; /* Remove default margin */
-  padding-bottom: 5px; /* Small padding for separation from flags */
+  /* Remove default margin */
+  margin: 0;
+  /* Small padding for separation from flags */
+  padding-bottom: 5px;
   text-align: center;
 }
 
 h3 {
-  margin: 5px 0; /* Reduce margin for the h3 (Guesses) */
-  padding: 0; /* Remove any default padding */
+  /* Reduce margin for the h3 (Guesses) */
+  margin: 5px 0;
+  /* Remove any default padding */
+  padding: 0;
 }

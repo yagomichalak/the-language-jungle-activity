@@ -24,12 +24,14 @@ const wrongAnswerAudio = new Audio('./assets/audios/SFX/wrong_answer.mp3');
 // Render the initial UI (with logo and title)
 function renderInitialUI() {
   document.querySelector('#app').innerHTML = `
+  <div class="game-container">
     <div id="game">
       <img src="${botLogo}" class="logo" alt="The Language Jungle" />
       <h1>The Language Jungle</h1>
       <p>Get ready to test your language skills in this game!</p>
     </div>
     <div id="scoreboard" hidden></div>
+  </div>
   `;
 }
 
@@ -41,7 +43,13 @@ setupDiscordSdk().then(() => {
   // Now that the SDK is ready, play background music
   // playBackgroundMusic();
   // updatePresence();
-  startGame(); // Ensure the game starts here
+  document.querySelector("#game").innerHTML += `
+  <div>
+    <button id="startGame" class="button"> Start </button>
+  </div>
+`;
+
+  document.querySelector('#startGame').addEventListener('click', () => { startGame() });
 });
 
 
@@ -54,7 +62,7 @@ async function appendVoiceChannelName() {
   // the dm_channels.read scope which requires Discord approval.
   if (discordSdk.channelId != null && discordSdk.guildId != null) {
     // Over RPC collect info about the channel
-    const channel = await discordSdk.commands.getChannel({channel_id: discordSdk.channelId});
+    const channel = await discordSdk.commands.getChannel({ channel_id: discordSdk.channelId });
     if (channel.name != null) {
       activityChannelName = channel.name;
     }
@@ -166,7 +174,7 @@ async function fetchAudioFiles(times) {
     { language: "Silesian", path: "Silesian/Silesian_1.mp3" },
   ]
   // audioFiles = []; // Clear the array to accumulate new files
-  
+
   // for (let i = 0; i < times; i++) {
   //   try {
   //     // const response = await fetch("/api/audios");
@@ -196,9 +204,9 @@ async function startGame() {
   currentRound = 0;
   remainingAttempts = maxAttempts;
   isGameOver = false;
-  const appElement = document.querySelector('#app');
-  appElement.querySelector("#game").innerHTML += `<h2>Game starting!</h2>`;
-  const scoreboardElement = appElement.querySelector("#scoreboard")
+  const gameContainer = document.querySelector('.game-container');
+  gameContainer.querySelector("#game").innerHTML += `<h2>Game starting!</h2>`;
+  const scoreboardElement = gameContainer.querySelector("#scoreboard")
   scoreboardElement.innerHTML = `
     <div id="flags-container" class="flags-container">
       <h3>Guesses:</h3>
@@ -351,12 +359,14 @@ function checkAnswer(userInput, answer) {
 
 function endGame(won) {
   isGameOver = true;
-  document.querySelector('#app').innerHTML = `
+  document.querySelector('#game').innerHTML = `
     <h2>${won ? "You Won!" : "Game Over!"}</h2>
-    <button id="restartGame">Restart</button>
-  `;
+    <div>
+      <button id="restartGame" class="button">Restart</button>
+    </div>
+     `;
 
-  document.querySelector('#restartGame').addEventListener('click', startGame);
+  document.querySelector('#restartGame').addEventListener('click', () => { startGame() });
 }
 
 function showCountdown(seconds, callback) {
@@ -397,15 +407,15 @@ async function updatePresence() {
 
 function triggerCorrectAnswerAnimation() {
   const animationPopup = document.getElementById('animation-popup');
-  
+
   // Show the animation by adding the class
   animationPopup.classList.remove('hidden');
   animationPopup.classList.add('show-animation');
-  
+
   // Hide the animation after 1 second
   setTimeout(() => {
     animationPopup.classList.add('hide');
-    
+
     // After the transition, hide the element completely
     setTimeout(() => {
       animationPopup.classList.remove('show-animation', 'hide');
